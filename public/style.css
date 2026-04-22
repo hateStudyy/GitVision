@@ -1,0 +1,333 @@
+/* ==========================================================
+   GitVision - GitHub 仓库历史全景总结工具 - 样式
+   设计原则：轻量、简洁、信息密度适中、深灰底 + GitHub 风配色
+   ========================================================== */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1117;
+  --bg-elev: #161b22;
+  --bg-elev-2: #21262d;
+  --border: #30363d;
+  --text: #c9d1d9;
+  --text-dim: #8b949e;
+  --accent: #2f81f7;
+  --accent-hover: #1f6feb;
+  --success: #3fb950;
+  --danger: #f85149;
+  --warning: #d29922;
+  --highlight-bg: rgba(47, 129, 247, 0.08);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+               "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+  width: 100%;
+}
+
+/* Header */
+.site-header {
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+  padding: 32px 0;
+}
+.site-header h1 { font-size: 26px; font-weight: 600; }
+.subtitle { color: var(--text-dim); margin-top: 6px; font-size: 14px; }
+
+/* Footer */
+.site-footer {
+  margin-top: auto;
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* 输入卡片 */
+.input-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 24px;
+}
+.input-row {
+  display: flex;
+  gap: 10px;
+}
+#repo-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+}
+#repo-input:focus { outline: none; border-color: var(--accent); }
+#analyze-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0 22px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s;
+}
+#analyze-btn:hover { background: var(--accent-hover); }
+#analyze-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+.status {
+  margin-top: 12px;
+  font-size: 13px;
+  min-height: 20px;
+}
+.status.loading { color: var(--warning); }
+.status.error { color: var(--danger); }
+.status.ok { color: var(--success); }
+
+/* 结果区 */
+.result { margin-top: 24px; padding-bottom: 40px; }
+.result.hidden { display: none; }
+
+.panel {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 18px;
+}
+.panel.highlight {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, var(--highlight-bg), var(--bg-elev));
+}
+.panel h2 {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+.panel h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-top: 14px;
+  margin-bottom: 8px;
+}
+.panel-desc { color: var(--text-dim); font-size: 13px; margin-bottom: 12px; }
+
+/* 基础信息网格 */
+.basic-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+.basic-info .item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.basic-info .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.basic-info .value {
+  font-size: 14px;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+/* overview */
+.overview { color: var(--text); font-size: 14px; line-height: 1.8; }
+.overview .tag { display: inline-block; background: var(--bg-elev-2); padding: 2px 8px;
+  border-radius: 10px; font-size: 12px; margin: 2px; color: var(--text-dim); }
+
+/* 快速链接 */
+.quick-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+.quick-links a, .year-jumps a {
+  display: block;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color .15s, background .15s;
+}
+.quick-links a:hover, .year-jumps a:hover {
+  border-color: var(--accent);
+  background: var(--highlight-bg);
+}
+.quick-links .title { font-weight: 600; font-size: 13px; }
+.quick-links .desc { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+.year-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.year-jumps a {
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
+/* 首次提交 */
+.first-commit {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--success);
+  border-radius: 6px;
+  padding: 14px;
+}
+.first-commit .sha { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--accent); }
+.first-commit .meta { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+.first-commit .msg { margin-top: 8px; white-space: pre-wrap; font-size: 14px; }
+.first-commit a.btn {
+  display: inline-block; margin-top: 10px;
+  background: var(--accent); color: #fff; padding: 6px 14px;
+  border-radius: 5px; text-decoration: none; font-size: 13px;
+}
+
+/* 时间线 */
+.timeline {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 120px;
+  padding: 10px 0;
+  overflow-x: auto;
+}
+.timeline .bar {
+  flex: 0 0 14px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+  position: relative;
+  min-height: 2px;
+  opacity: .85;
+}
+.timeline .bar:hover { opacity: 1; }
+.timeline .bar::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-elev-2);
+  color: var(--text);
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+}
+.timeline .bar:hover::after { opacity: 1; }
+
+/* 里程碑 */
+.milestones { display: flex; flex-direction: column; gap: 6px; max-height: 340px; overflow-y: auto; }
+.milestone-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.milestone-item .badge {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.milestone-item .badge.first { background: var(--success); color: #0d1117; }
+.milestone-item .badge.tag { background: var(--accent); color: #fff; }
+.milestone-item .title { flex: 1; }
+.milestone-item a {
+  color: var(--accent); text-decoration: none; font-size: 12px; margin-left: 6px;
+}
+.milestone-item a:hover { text-decoration: underline; }
+
+/* 分类摘要 */
+.categorized {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+.cat-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+}
+.cat-box h4 { font-size: 13px; margin-bottom: 8px; }
+.cat-box h4 .count { color: var(--text-dim); font-weight: 400; font-size: 12px; }
+.cat-box ul { list-style: none; }
+.cat-box li {
+  font-size: 12px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--border);
+  color: var(--text-dim);
+}
+.cat-box li:last-child { border-bottom: none; }
+.cat-box li a { color: var(--text); text-decoration: none; }
+.cat-box li a:hover { color: var(--accent); }
+
+.cat-feat h4::before { content: "✨ "; }
+.cat-fix h4::before { content: "🐛 "; }
+.cat-refactor h4::before { content: "♻️ "; }
+.cat-perf h4::before { content: "⚡ "; }
+.cat-docs h4::before { content: "📝 "; }
+.cat-test h4::before { content: "✅ "; }
+.cat-chore h4::before { content: "🔧 "; }
+
+/* 两列提交列表 */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+@media (max-width: 700px) {
+  .two-col { grid-template-columns: 1fr; }
+}
+.commit-list { list-style: none; }
+.commit-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.commit-list li:last-child { border: none; }
+.commit-list .sha {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  color: var(--accent); font-size: 12px;
+}
+.commit-list .date { color: var(--text-dim); font-size: 11px; margin-left: 6px; }
+.commit-list .msg { margin-top: 2px; color: var(--text); }
+.commit-list a { text-decoration: none; color: inherit; display: block; }
+.commit-list a:hover .msg { color: var(--accent); }

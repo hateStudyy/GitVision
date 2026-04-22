@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitVision · GitHub 仓库历史全景总结</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1>GitVision · GitHub 仓库历史全景总结</h1>
+      <p class="subtitle">粘贴任意 GitHub 仓库地址，一键直达首次提交 / 早期历史 / 版本里程碑</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- 输入区 -->
+    <section class="input-card">
+      <div class="input-row">
+        <input
+          id="repo-input"
+          type="text"
+          placeholder="例如：https://github.com/torvalds/linux 或 facebook/react"
+          autocomplete="off"
+        />
+        <button id="analyze-btn">分析仓库</button>
+      </div>
+      <div id="status" class="status"></div>
+    </section>
+
+    <!-- 结果区 -->
+    <section id="result" class="result hidden">
+
+      <!-- 1. 基础信息 -->
+      <div class="panel">
+        <h2>① 仓库基础信息</h2>
+        <div id="basic-info" class="basic-info"></div>
+      </div>
+
+      <!-- 2. 项目整体简介 -->
+      <div class="panel">
+        <h2>② 项目整体简介</h2>
+        <div id="overview" class="overview"></div>
+      </div>
+
+      <!-- 3. 一键直达跳转 -->
+      <div class="panel highlight">
+        <h2>③ 一键直达（GitHub 原生链接）</h2>
+        <p class="panel-desc">解决 GitHub 原生无法快速跳到最早提交的痛点，所有链接永久有效</p>
+        <div id="quick-links" class="quick-links"></div>
+        <h3>按年份快速筛选</h3>
+        <div id="year-jumps" class="year-jumps"></div>
+      </div>
+
+      <!-- 4. 首次提交 -->
+      <div class="panel">
+        <h2>④ 第一次提交（项目起点）</h2>
+        <div id="first-commit" class="first-commit"></div>
+      </div>
+
+      <!-- 5. 完整历史时间线 -->
+      <div class="panel">
+        <h2>⑤ 完整历史时间线</h2>
+        <div id="timeline" class="timeline"></div>
+      </div>
+
+      <!-- 6. 关键版本 & tags -->
+      <div class="panel">
+        <h2>⑥ 关键版本 & 里程碑</h2>
+        <div id="milestones" class="milestones"></div>
+      </div>
+
+      <!-- 7. AI 分类摘要 -->
+      <div class="panel">
+        <h2>⑦ 提交分类摘要（新增 / 修复 / 重构 / 优化 / 其他）</h2>
+        <div id="categorized" class="categorized"></div>
+      </div>
+
+      <!-- 8. 最新 & 最早提交 -->
+      <div class="panel">
+        <h2>⑧ 最新 20 条 & 最早 20 条提交</h2>
+        <div class="two-col">
+          <div>
+            <h3>最新提交</h3>
+            <ul id="latest-commits" class="commit-list"></ul>
+          </div>
+          <div>
+            <h3>最早提交</h3>
+            <ul id="earliest-commits" class="commit-list"></ul>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>纯原生 Node.js + 官方 GitHub REST API · 不克隆仓库、不下载代码</span>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

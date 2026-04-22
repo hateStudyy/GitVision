@@ -1,0 +1,45 @@
+# ===== Node.js =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ===== 环境变量 / 密钥 =====
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ===== 日志 =====
+logs/
+*.log
+
+# ===== 运行时 / 缓存 =====
+.cache/
+.tmp/
+tmp/
+pids/
+*.pid
+*.seed
+
+# ===== Vercel =====
+.vercel/
+
+# ===== 编辑器 / 系统 =====
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ===== 构建产物（本项目暂无，占位以免未来误提交）=====
+dist/
+build/
+out/
+coverage/

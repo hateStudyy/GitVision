@@ -1,0 +1,13 @@
+{
+  "name": "gitvision",
+  "version": "1.0.0",
+  "description": "GitVision - GitHub 仓库历史全景总结工具，纯原生 Node.js 实现",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}
