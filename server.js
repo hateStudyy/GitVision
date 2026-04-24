@@ -222,52 +222,39 @@ async function aggregateRepoHistory(owner, repo) {
     if (Array.isArray(tagsResp2.body)) tags = tags.concat(tagsResp2.body);
   }
 
-  // 5. 均匀采样多页（最多 8 个中间页），以覆盖完整时间跨度
-  //    每 2 页一批串行发送，避免并发过多导致超时
+  // 5. 均匀采样多页（最多 4 个中间页），用于分类摘要
+  //    并发请求加速（有 Token 时不怕限流）
   let midCommits = [];
   if (lastPage && lastPage > 2) {
-    const maxSamplePages = Math.min(8, lastPage - 2);
+    const maxSamplePages = Math.min(4, lastPage - 2);
     const step = (lastPage - 2) / (maxSamplePages + 1);
     const pagesToFetch = [];
     for (let i = 1; i <= maxSamplePages; i++) {
       pagesToFetch.push(Math.round(1 + step * i));
     }
-    const batchSize = 2;
-    for (let b = 0; b < pagesToFetch.length; b += batchSize) {
-      const batch = pagesToFetch.slice(b, b + batchSize);
-      const results = await Promise.all(
-        batch.map(p =>
-          githubRequest(`/repos/${owner}/${repo}/commits`, {
-            sha: defaultBranch, per_page: 100, page: p
-          })
-        )
-      );
-      for (const r of results) {
-        if (r.status === 200 && Array.isArray(r.body)) {
-          midCommits = midCommits.concat(r.body);
-        }
+    const results = await Promise.all(
+      pagesToFetch.map(p =>
+        githubRequest(`/repos/${owner}/${repo}/commits`, {
+          sha: defaultBranch, per_page: 100, page: p
+        })
+      )
+    );
+    for (const r of results) {
+      if (r.status === 200 && Array.isArray(r.body)) {
+        midCommits = midCommits.concat(r.body);
       }
     }
   }
 
-  // 6. 获取完整时间线：使用 GitHub Statistics API
-  //    /stats/contributors 返回每个贡献者全历史每周提交数
-  //    叠加所有贡献者即得 100% 精确的周级数据，再按月聚合
-  //    注意：首次请求可能返回 202（后台计算中），需重试
+  // 6. 获取完整时间线：使用 GitHub Statistics API（不阻塞）
+  //    仅发一次请求：200 直接用；202 说明 GitHub 在后台计算，不等待，
+  //    先返回采样数据，前端可点"刷新"再次请求（此时缓存通常已就绪）
   let weeklyData = null;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const statsResp = await githubRequest(`/repos/${owner}/${repo}/stats/contributors`);
-    if (statsResp.status === 200 && Array.isArray(statsResp.body)) {
-      weeklyData = statsResp.body;
-      break;
-    }
-    // 202 = GitHub 正在后台计算，等待后重试（冷仓库可能需要 10-20 秒）
-    if (statsResp.status === 202) {
-      await new Promise(r => setTimeout(r, 3000));
-      continue;
-    }
-    break; // 其他错误不再重试
+  const statsResp = await githubRequest(`/repos/${owner}/${repo}/stats/contributors`);
+  if (statsResp.status === 200 && Array.isArray(statsResp.body)) {
+    weeklyData = statsResp.body;
   }
+  // 202 = GitHub 正在后台计算，不阻塞等待，直接用采样数据
 
   // 将所有贡献者的周数据叠加为 { weekTimestamp -> totalCommits }
   const weeklyMap = new Map();
