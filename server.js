@@ -255,15 +255,15 @@ async function aggregateRepoHistory(owner, repo) {
   //    叠加所有贡献者即得 100% 精确的周级数据，再按月聚合
   //    注意：首次请求可能返回 202（后台计算中），需重试
   let weeklyData = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 5; attempt++) {
     const statsResp = await githubRequest(`/repos/${owner}/${repo}/stats/contributors`);
     if (statsResp.status === 200 && Array.isArray(statsResp.body)) {
       weeklyData = statsResp.body;
       break;
     }
-    // 202 = GitHub 正在后台计算，等待后重试
+    // 202 = GitHub 正在后台计算，等待后重试（冷仓库可能需要 10-20 秒）
     if (statsResp.status === 202) {
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 3000));
       continue;
     }
     break; // 其他错误不再重试

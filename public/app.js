@@ -189,13 +189,15 @@
 
     // 统计摘要
     const isExact = d.timelineSource === 'stats_api';
-    const sourceLabel = isExact ? '精确统计（GitHub Statistics API）' : '采样统计';
+    const sourceLabel = isExact
+      ? '精确统计（GitHub Statistics API）'
+      : '采样估算 · <a href="javascript:void(0)" id="tl-refresh" style="color:var(--accent);text-decoration:underline">刷新获取精确数据</a>';
     const statsHtml = `<div class="tl-stats">
       <span>跨度 <strong>${years.length}</strong> 年 · <strong>${t.length}</strong> 个月</span>
       <span>有提交月份 <strong>${monthsWithData}</strong> 个</span>
-      <span>总提交数 <strong>${totalCommits}</strong></span>
+      <span>总提交数 <strong>${totalCommits}</strong>${isExact ? '' : '（估算）'}</span>
       ${peakMonth ? '<span>峰值 <strong>' + peakMonth.count + '</strong> 次/月 (' + peakMonth.month + ')</span>' : ''}
-      <span>数据来源：<strong>${sourceLabel}</strong></span>
+      <span>数据来源：${sourceLabel}</span>
     </div>`;
 
     // 年度柱状图
@@ -269,6 +271,14 @@
       activeYear = null;
     }
     $('#tl-month-close').addEventListener('click', closePanel);
+
+    // 采样模式下，点击"刷新"重新请求（此时 GitHub 缓存可能已就绪）
+    const refreshBtn = document.getElementById('tl-refresh');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', function () {
+        analyze();
+      });
+    }
   }
 
   /** ⑥ 里程碑 */
