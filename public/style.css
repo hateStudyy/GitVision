@@ -211,81 +211,101 @@ body {
   border-radius: 5px; text-decoration: none; font-size: 13px;
 }
 
-/* 时间线 */
-.timeline-wrapper {
-  width: 100%;
-  overflow-x: auto;
-  padding-bottom: 8px;
+/* ===== 时间线 - 年度总览 + 月份展开 ===== */
+.tl-stats {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  margin-bottom: 16px; font-size: 12px; color: var(--text-dim);
 }
-.timeline-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 1px;
-  height: 160px;
-  min-width: max-content;
-  padding: 0 0 28px;
-  position: relative;
+.tl-stats strong { color: var(--text); }
+
+/* 年度柱状图容器 */
+.tl-years {
+  display: flex; align-items: flex-end; gap: 4px;
+  width: 100%; height: 180px;
+  padding-bottom: 32px; position: relative;
 }
-.timeline-chart .bar-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 0 0 auto;
-  position: relative;
+.tl-year-col {
+  flex: 1 1 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+  height: 100%; position: relative; cursor: pointer;
+  min-width: 0;
 }
-.timeline-chart .bar {
-  width: 10px;
-  min-width: 6px;
-  background: var(--accent);
-  border-radius: 2px 2px 0 0;
-  min-height: 1px;
-  opacity: .75;
-  transition: opacity .12s;
-  cursor: pointer;
+.tl-year-bar {
+  width: 100%; max-width: 48px; min-width: 8px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, #58a6ff 0%, #1f6feb 100%);
+  transition: all .2s ease; position: relative;
+  min-height: 0;
 }
-.timeline-chart .bar.empty {
-  background: var(--border);
-  min-height: 1px;
-  opacity: .3;
+.tl-year-col:hover .tl-year-bar {
+  filter: brightness(1.3); box-shadow: 0 0 12px rgba(47,129,247,.4);
 }
-.timeline-chart .bar:hover { opacity: 1; }
-.timeline-chart .bar-group .label {
-  position: absolute;
-  top: 100%;
-  margin-top: 4px;
-  font-size: 10px;
-  color: var(--text-dim);
-  white-space: nowrap;
-  transform: rotate(-45deg);
-  transform-origin: top left;
+.tl-year-col.active .tl-year-bar {
+  background: linear-gradient(180deg, #7ee787 0%, #3fb950 100%);
+  box-shadow: 0 0 12px rgba(63,185,80,.4);
 }
-.timeline-chart .bar-group .tooltip {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg-elev-2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-  opacity: 0;
+.tl-year-count {
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  font-size: 10px; color: var(--text-dim); white-space: nowrap;
+  margin-bottom: 4px; opacity: 0; transition: opacity .15s;
   pointer-events: none;
-  transition: opacity .12s;
-  z-index: 10;
 }
-.timeline-chart .bar-group:hover .tooltip { opacity: 1; }
-.timeline-stats {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-  font-size: 12px;
-  color: var(--text-dim);
+.tl-year-col:hover .tl-year-count { opacity: 1; }
+.tl-year-label {
+  position: absolute; top: 100%; margin-top: 6px;
+  font-size: 11px; color: var(--text-dim); white-space: nowrap;
+  font-weight: 500;
 }
-.timeline-stats strong { color: var(--text); }
+.tl-year-col.active .tl-year-label { color: var(--success); font-weight: 600; }
+
+/* 月份展开面板 */
+.tl-month-panel {
+  margin-top: 16px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+  max-height: 0; opacity: 0; transition: max-height .35s ease, opacity .25s ease, padding .25s ease;
+  padding: 0 16px;
+}
+.tl-month-panel.open {
+  max-height: 300px; opacity: 1; padding: 16px;
+}
+.tl-month-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.tl-month-header h4 { font-size: 14px; font-weight: 600; margin: 0; }
+.tl-month-header .close-btn {
+  background: none; border: 1px solid var(--border); color: var(--text-dim);
+  border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 12px;
+  transition: all .15s;
+}
+.tl-month-header .close-btn:hover { border-color: var(--text); color: var(--text); }
+.tl-month-grid {
+  display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px;
+  align-items: flex-end; height: 100px;
+}
+.tl-month-col {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-end; height: 100%; gap: 4px;
+}
+.tl-month-bar {
+  width: 100%; max-width: 32px; min-height: 0;
+  border-radius: 3px 3px 0 0;
+  background: var(--accent); opacity: .8;
+  transition: all .2s;
+}
+.tl-month-bar.empty { background: var(--border); opacity: .25; min-height: 2px; }
+.tl-month-col:hover .tl-month-bar:not(.empty) {
+  opacity: 1; filter: brightness(1.2);
+}
+.tl-month-num {
+  font-size: 10px; color: var(--text-dim); font-weight: 500;
+  opacity: 0; transition: opacity .12s;
+}
+.tl-month-col:hover .tl-month-num { opacity: 1; }
+.tl-month-bar:not(.empty) + .tl-month-num { opacity: .7; }
+.tl-month-name {
+  font-size: 10px; color: var(--text-dim); margin-top: 2px;
+}
 
 /* 里程碑 */
 .milestones { display: flex; flex-direction: column; gap: 6px; max-height: 340px; overflow-y: auto; }

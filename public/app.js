@@ -159,49 +159,113 @@
     `;
   }
 
-  /** ⑤ 时间线 */
+  /** ⑤ 时间线 — 年度总览 + 点击展开月份 */
   function renderTimeline(d) {
     const t = d.timeline || [];
     if (!t.length) {
       $('#timeline').innerHTML = '<p style="color:var(--text-dim)">无数据</p>';
       return;
     }
-    const max = Math.max.apply(null, t.map(x => x.count));
-    const chartH = 130; // 柱子最大高度 px
-    const totalCommits = t.reduce((s, x) => s + x.count, 0);
+
+    // 按年聚合
+    const yearMap = new Map();
+    for (const item of t) {
+      const y = item.month.slice(0, 4);
+      if (!yearMap.has(y)) yearMap.set(y, []);
+      yearMap.get(y).push(item);
+    }
+    const years = Array.from(yearMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    const yearTotals = years.map(([y, months]) => ({
+      year: y,
+      total: months.reduce((s, m) => s + m.count, 0),
+      months
+    }));
+
+    const maxYear = Math.max.apply(null, yearTotals.map(y => y.total));
+    const totalCommits = yearTotals.reduce((s, y) => s + y.total, 0);
     const monthsWithData = t.filter(x => x.count > 0).length;
+    const peakMonth = t.reduce((a, c) => c.count > (a ? a.count : 0) ? c : a, null);
+    const barMaxH = 140; // px
 
-    // 每条 bar 宽度根据月份数量动态适配
-    const barW = t.length > 120 ? 6 : t.length > 60 ? 8 : 10;
+    // 统计摘要
+    const statsHtml = `<div class="tl-stats">
+      <span>跨度 <strong>${years.length}</strong> 年 · <strong>${t.length}</strong> 个月</span>
+      <span>有提交的月份 <strong>${monthsWithData}</strong> 个</span>
+      <span>采样提交数 <strong>${totalCommits}</strong></span>
+      ${peakMonth ? '<span>峰值 <strong>' + peakMonth.count + '</strong> 次/月 (' + peakMonth.month + ')</span>' : ''}
+    </div>`;
 
-    // 决定显示哪些月份标签：若总月份 > 48，只显示每年1月；否则每3个月显示
-    const labelInterval = t.length > 48 ? 12 : t.length > 24 ? 3 : 1;
-
-    let barsHtml = t.map((item, i) => {
-      const h = item.count > 0 ? Math.max(3, Math.round((item.count / max) * chartH)) : 1;
-      const emptyCls = item.count === 0 ? ' empty' : '';
-      const month = item.month; // YYYY-MM
-      const [y, m] = month.split('-');
-      const showLabel = (labelInterval === 12 && m === '01')
-        || (labelInterval === 3 && ['01','04','07','10'].includes(m))
-        || labelInterval === 1;
-      const labelText = showLabel ? (m === '01' ? y : month) : '';
-      return `<div class="bar-group">
-        <div class="tooltip">${escape(month)} · ${item.count} 次提交</div>
-        <div class="bar${emptyCls}" style="height:${h}px;width:${barW}px"></div>
-        ${labelText ? '<span class="label">' + escape(labelText) + '</span>' : ''}
+    // 年度柱状图
+    const yearBarsHtml = yearTotals.map(yd => {
+      const h = yd.total > 0 ? Math.max(6, Math.round((yd.total / maxYear) * barMaxH)) : 2;
+      return `<div class="tl-year-col" data-year="${yd.year}">
+        <span class="tl-year-count">${yd.total} 次</span>
+        <div class="tl-year-bar" style="height:${h}px"></div>
+        <span class="tl-year-label">${yd.year}</span>
       </div>`;
     }).join('');
 
-    const statsHtml = `<div class="timeline-stats">
-      <span>覆盖 <strong>${t.length}</strong> 个月</span>
-      <span>有提交的月份 <strong>${monthsWithData}</strong> 个</span>
-      <span>采样提交数 <strong>${totalCommits}</strong></span>
-      <span>峰值 <strong>${max}</strong> 次/月</span>
+    // 月份展开面板（初始隐藏）
+    const monthPanelHtml = `<div class="tl-month-panel" id="tl-month-panel">
+      <div class="tl-month-header">
+        <h4 id="tl-month-title">点击上方年份柱查看月份详情</h4>
+        <button class="close-btn" id="tl-month-close">收起</button>
+      </div>
+      <div class="tl-month-grid" id="tl-month-grid"></div>
     </div>`;
 
-    $('#timeline').innerHTML =
-      `<div class="timeline-wrapper"><div class="timeline-chart">${barsHtml}</div></div>${statsHtml}`;
+    $('#timeline').innerHTML = statsHtml
+      + `<div class="tl-years">${yearBarsHtml}</div>`
+      + monthPanelHtml;
+
+    // 交互：点击年份展开月份
+    const panel = $('#tl-month-panel');
+    const grid = $('#tl-month-grid');
+    const title = $('#tl-month-title');
+    let activeYear = null;
+
+    document.querySelectorAll('.tl-year-col').forEach(col => {
+      col.addEventListener('click', function () {
+        const y = this.dataset.year;
+        if (activeYear === y) { closePanel(); return; }
+        activeYear = y;
+        document.querySelectorAll('.tl-year-col').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+
+        const yd = yearTotals.find(x => x.year === y);
+        if (!yd) return;
+        const maxM = Math.max.apply(null, yd.months.map(m => m.count));
+        const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+        // 补全 12 个月
+        const full = [];
+        for (let mi = 1; mi <= 12; mi++) {
+          const key = y + '-' + String(mi).padStart(2, '0');
+          const found = yd.months.find(m => m.month === key);
+          full.push({ month: key, count: found ? found.count : 0, label: monthNames[mi - 1] });
+        }
+
+        grid.innerHTML = full.map(m => {
+          const mh = m.count > 0 ? Math.max(6, Math.round((m.count / (maxM || 1)) * 80)) : 2;
+          const emptyCls = m.count === 0 ? ' empty' : '';
+          return `<div class="tl-month-col">
+            <span class="tl-month-num">${m.count}</span>
+            <div class="tl-month-bar${emptyCls}" style="height:${mh}px"></div>
+            <span class="tl-month-name">${m.label}</span>
+          </div>`;
+        }).join('');
+
+        title.textContent = y + ' 年 · 共 ' + yd.total + ' 次提交';
+        panel.classList.add('open');
+      });
+    });
+
+    function closePanel() {
+      panel.classList.remove('open');
+      document.querySelectorAll('.tl-year-col').forEach(c => c.classList.remove('active'));
+      activeYear = null;
+    }
+    $('#tl-month-close').addEventListener('click', closePanel);
   }
 
   /** ⑥ 里程碑 */
