@@ -250,6 +250,36 @@ async function aggregateRepoHistory(owner, repo) {
     }
   }
 
+  // 6. 获取完整时间线：使用 GitHub Statistics API
+  //    /stats/contributors 返回每个贡献者全历史每周提交数
+  //    叠加所有贡献者即得 100% 精确的周级数据，再按月聚合
+  //    注意：首次请求可能返回 202（后台计算中），需重试
+  let weeklyData = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const statsResp = await githubRequest(`/repos/${owner}/${repo}/stats/contributors`);
+    if (statsResp.status === 200 && Array.isArray(statsResp.body)) {
+      weeklyData = statsResp.body;
+      break;
+    }
+    // 202 = GitHub 正在后台计算，等待后重试
+    if (statsResp.status === 202) {
+      await new Promise(r => setTimeout(r, 2000));
+      continue;
+    }
+    break; // 其他错误不再重试
+  }
+
+  // 将所有贡献者的周数据叠加为 { weekTimestamp -> totalCommits }
+  const weeklyMap = new Map();
+  if (weeklyData) {
+    for (const contributor of weeklyData) {
+      if (!contributor.weeks) continue;
+      for (const w of contributor.weeks) {
+        weeklyMap.set(w.w, (weeklyMap.get(w.w) || 0) + w.c);
+      }
+    }
+  }
+
   return {
     repoInfo,
     defaultBranch,
@@ -259,7 +289,8 @@ async function aggregateRepoHistory(owner, repo) {
     firstCommit,
     tags,
     lastPage,
-    totalCommitsEstimate
+    totalCommitsEstimate,
+    weeklyMap
   };
 }
 
@@ -394,7 +425,7 @@ async function handleHistoryApi(req, res, parsedUrl) {
   try {
     const data = await aggregateRepoHistory(parsed.owner, parsed.repo);
     const { repoInfo, defaultBranch, latestCommits, earliestCommits, midCommits,
-            firstCommit, tags, lastPage, totalCommitsEstimate } = data;
+            firstCommit, tags, lastPage, totalCommitsEstimate, weeklyMap } = data;
 
     // 合并用于摘要的 commit 样本
     const sample = [...latestCommits, ...midCommits, ...earliestCommits];
@@ -403,6 +434,34 @@ async function handleHistoryApi(req, res, parsedUrl) {
     const sampleCommits = Array.from(dedup.values());
 
     const summary = summarizeCommits(sampleCommits);
+
+    // 用 GitHub Statistics API 的精确周数据构建完整月度时间线
+    // 如果 weeklyMap 有数据则替换采样时间线
+    if (weeklyMap && weeklyMap.size > 0) {
+      const monthlyExact = new Map();
+      for (const [ts, count] of weeklyMap) {
+        if (count === 0) continue;
+        const d = new Date(ts * 1000);
+        const ym = d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
+        monthlyExact.set(ym, (monthlyExact.get(ym) || 0) + count);
+      }
+      // 补全空缺月份
+      const sortedKeys = Array.from(monthlyExact.keys()).sort();
+      if (sortedKeys.length >= 2) {
+        const [sY, sM] = sortedKeys[0].split('-').map(Number);
+        const [eY, eM] = sortedKeys[sortedKeys.length - 1].split('-').map(Number);
+        const fullTimeline = [];
+        let y = sY, m = sM;
+        while (y < eY || (y === eY && m <= eM)) {
+          const key = `${y}-${String(m).padStart(2, '0')}`;
+          fullTimeline.push({ month: key, count: monthlyExact.get(key) || 0 });
+          m++;
+          if (m > 12) { m = 1; y++; }
+        }
+        summary.timeline = fullTimeline;
+        summary.timelineSource = 'stats_api';
+      }
+    }
     const links = buildGithubLinks(
       parsed.owner, parsed.repo, defaultBranch,
       firstCommit ? firstCommit.sha : null,
@@ -490,6 +549,7 @@ async function handleHistoryApi(req, res, parsedUrl) {
       })),
       milestones,
       timeline: summary.timeline,
+      timelineSource: summary.timelineSource || 'sampled',
       categorized: {
         feat: summary.buckets.feat.slice(0, 15).map(x => ({ ...x, url: commitUrl(parsed.owner, parsed.repo, x.sha) })),
         fix: summary.buckets.fix.slice(0, 15).map(x => ({ ...x, url: commitUrl(parsed.owner, parsed.repo, x.sha) })),

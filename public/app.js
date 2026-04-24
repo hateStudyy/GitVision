@@ -188,11 +188,14 @@
     const barMaxH = 140; // px
 
     // 统计摘要
+    const isExact = d.timelineSource === 'stats_api';
+    const sourceLabel = isExact ? '精确统计（GitHub Statistics API）' : '采样统计';
     const statsHtml = `<div class="tl-stats">
       <span>跨度 <strong>${years.length}</strong> 年 · <strong>${t.length}</strong> 个月</span>
-      <span>有提交的月份 <strong>${monthsWithData}</strong> 个</span>
-      <span>采样提交数 <strong>${totalCommits}</strong></span>
+      <span>有提交月份 <strong>${monthsWithData}</strong> 个</span>
+      <span>总提交数 <strong>${totalCommits}</strong></span>
       ${peakMonth ? '<span>峰值 <strong>' + peakMonth.count + '</strong> 次/月 (' + peakMonth.month + ')</span>' : ''}
+      <span>数据来源：<strong>${sourceLabel}</strong></span>
     </div>`;
 
     // 年度柱状图
