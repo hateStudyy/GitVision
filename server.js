@@ -83,7 +83,7 @@ function githubRequest(pathname, query = {}) {
       }
     );
     req.on('error', reject);
-    req.setTimeout(20000, () => {
+    req.setTimeout(30000, () => {
       req.destroy(new Error('GitHub API 请求超时'));
     });
     req.end();
@@ -222,17 +222,31 @@ async function aggregateRepoHistory(owner, repo) {
     if (Array.isArray(tagsResp2.body)) tags = tags.concat(tagsResp2.body);
   }
 
-  // 5. 中间节点采样：若总页数较多，取中间一页做"里程碑"窥视
+  // 5. 均匀采样多页（最多 8 个中间页），以覆盖完整时间跨度
+  //    每 2 页一批串行发送，避免并发过多导致超时
   let midCommits = [];
   if (lastPage && lastPage > 2) {
-    const midPage = Math.ceil(lastPage / 2);
-    const midResp = await githubRequest(`/repos/${owner}/${repo}/commits`, {
-      sha: defaultBranch,
-      per_page: 100,
-      page: midPage
-    });
-    if (midResp.status === 200 && Array.isArray(midResp.body)) {
-      midCommits = midResp.body;
+    const maxSamplePages = Math.min(8, lastPage - 2);
+    const step = (lastPage - 2) / (maxSamplePages + 1);
+    const pagesToFetch = [];
+    for (let i = 1; i <= maxSamplePages; i++) {
+      pagesToFetch.push(Math.round(1 + step * i));
+    }
+    const batchSize = 2;
+    for (let b = 0; b < pagesToFetch.length; b += batchSize) {
+      const batch = pagesToFetch.slice(b, b + batchSize);
+      const results = await Promise.all(
+        batch.map(p =>
+          githubRequest(`/repos/${owner}/${repo}/commits`, {
+            sha: defaultBranch, per_page: 100, page: p
+          })
+        )
+      );
+      for (const r of results) {
+        if (r.status === 200 && Array.isArray(r.body)) {
+          midCommits = midCommits.concat(r.body);
+        }
+      }
     }
   }
 
@@ -284,9 +298,24 @@ function summarizeCommits(allCommits) {
     }
   }
 
-  const timeline = Array.from(monthly.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([ym, count]) => ({ month: ym, count }));
+  // 补全从最早月份到最新月份之间所有空缺的月份（count=0）
+  const sortedMonths = Array.from(monthly.keys()).sort();
+  let timeline = [];
+  if (sortedMonths.length >= 2) {
+    const [startY, startM] = sortedMonths[0].split('-').map(Number);
+    const [endY, endM] = sortedMonths[sortedMonths.length - 1].split('-').map(Number);
+    let y = startY, m = startM;
+    while (y < endY || (y === endY && m <= endM)) {
+      const key = `${y}-${String(m).padStart(2, '0')}`;
+      timeline.push({ month: key, count: monthly.get(key) || 0 });
+      m++;
+      if (m > 12) { m = 1; y++; }
+    }
+  } else {
+    timeline = Array.from(monthly.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([ym, count]) => ({ month: ym, count }));
+  }
 
   return { buckets, timeline };
 }

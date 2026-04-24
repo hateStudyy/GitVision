@@ -167,10 +167,41 @@
       return;
     }
     const max = Math.max.apply(null, t.map(x => x.count));
-    $('#timeline').innerHTML = t.map(item => {
-      const h = Math.max(2, Math.round((item.count / max) * 100));
-      return `<div class="bar" style="height:${h}%" data-tip="${item.month} · ${item.count} commits"></div>`;
+    const chartH = 130; // 柱子最大高度 px
+    const totalCommits = t.reduce((s, x) => s + x.count, 0);
+    const monthsWithData = t.filter(x => x.count > 0).length;
+
+    // 每条 bar 宽度根据月份数量动态适配
+    const barW = t.length > 120 ? 6 : t.length > 60 ? 8 : 10;
+
+    // 决定显示哪些月份标签：若总月份 > 48，只显示每年1月；否则每3个月显示
+    const labelInterval = t.length > 48 ? 12 : t.length > 24 ? 3 : 1;
+
+    let barsHtml = t.map((item, i) => {
+      const h = item.count > 0 ? Math.max(3, Math.round((item.count / max) * chartH)) : 1;
+      const emptyCls = item.count === 0 ? ' empty' : '';
+      const month = item.month; // YYYY-MM
+      const [y, m] = month.split('-');
+      const showLabel = (labelInterval === 12 && m === '01')
+        || (labelInterval === 3 && ['01','04','07','10'].includes(m))
+        || labelInterval === 1;
+      const labelText = showLabel ? (m === '01' ? y : month) : '';
+      return `<div class="bar-group">
+        <div class="tooltip">${escape(month)} · ${item.count} 次提交</div>
+        <div class="bar${emptyCls}" style="height:${h}px;width:${barW}px"></div>
+        ${labelText ? '<span class="label">' + escape(labelText) + '</span>' : ''}
+      </div>`;
     }).join('');
+
+    const statsHtml = `<div class="timeline-stats">
+      <span>覆盖 <strong>${t.length}</strong> 个月</span>
+      <span>有提交的月份 <strong>${monthsWithData}</strong> 个</span>
+      <span>采样提交数 <strong>${totalCommits}</strong></span>
+      <span>峰值 <strong>${max}</strong> 次/月</span>
+    </div>`;
+
+    $('#timeline').innerHTML =
+      `<div class="timeline-wrapper"><div class="timeline-chart">${barsHtml}</div></div>${statsHtml}`;
   }
 
   /** ⑥ 里程碑 */
