@@ -250,11 +250,17 @@ async function aggregateRepoHistory(owner, repo) {
   //    仅发一次请求：200 直接用；202 说明 GitHub 在后台计算，不等待，
   //    先返回采样数据，前端可点"刷新"再次请求（此时缓存通常已就绪）
   let weeklyData = null;
-  const statsResp = await githubRequest(`/repos/${owner}/${repo}/stats/contributors`);
+  // 首次请求；若 202 则等 4 秒重试 1 次（兼顾速度与命中率）
+  let statsResp = await githubRequest(`/repos/${owner}/${repo}/stats/contributors`);
   if (statsResp.status === 200 && Array.isArray(statsResp.body)) {
     weeklyData = statsResp.body;
+  } else if (statsResp.status === 202) {
+    await new Promise(r => setTimeout(r, 4000));
+    statsResp = await githubRequest(`/repos/${owner}/${repo}/stats/contributors`);
+    if (statsResp.status === 200 && Array.isArray(statsResp.body)) {
+      weeklyData = statsResp.body;
+    }
   }
-  // 202 = GitHub 正在后台计算，不阻塞等待，直接用采样数据
 
   // 将所有贡献者的周数据叠加为 { weekTimestamp -> totalCommits }
   const weeklyMap = new Map();

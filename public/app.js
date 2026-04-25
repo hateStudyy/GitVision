@@ -32,7 +32,7 @@
       setStatus('请输入 GitHub 仓库地址', 'error');
       return;
     }
-    setStatus('正在通过 GitHub API 拉取数据，首次查询可能需要 5-15 秒……', 'loading');
+    setStatus('正在分析仓库，通过 GitHub API 拉取数据……', 'loading');
     analyzeBtn.disabled = true;
     resultEl.classList.add('hidden');
 
