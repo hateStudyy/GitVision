@@ -45,6 +45,7 @@
       }
       render(data);
       setStatus(`分析完成 · ${data.owner}/${data.repo}`, 'ok');
+      showResultHideRec();
       resultEl.classList.remove('hidden');
       resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err) {
@@ -344,6 +345,101 @@
     const earliest = (d.earliestCommits || []).slice().reverse();
     $('#earliest-commits').innerHTML = renderList(earliest);
   }
+
+  // ========= 推荐仓库 =========
+  const recSection = $('#recommendations');
+  const backToRecBtn = document.createElement('button');
+  backToRecBtn.id = 'back-to-rec';
+  backToRecBtn.className = 'back-to-rec hidden';
+  backToRecBtn.textContent = '返回推荐列表';
+  // 插入到 input-card 后面
+  document.querySelector('.input-card').after(backToRecBtn);
+
+  backToRecBtn.addEventListener('click', function () {
+    resultEl.classList.add('hidden');
+    recSection.classList.remove('hidden');
+    backToRecBtn.classList.add('hidden');
+    setStatus('');
+  });
+
+  // 知名开源项目（手工精选经典）
+  const CLASSICS = [
+    { fullName: 'torvalds/linux', description: 'Linux 内核源码，现代操作系统的基石', language: 'C', stars: 0 },
+    { fullName: 'facebook/react', description: '构建用户界面的 JavaScript 库', language: 'JavaScript', stars: 0 },
+    { fullName: 'tensorflow/tensorflow', description: 'Google 开源机器学习框架', language: 'C++', stars: 0 },
+    { fullName: 'microsoft/vscode', description: '最流行的代码编辑器', language: 'TypeScript', stars: 0 },
+    { fullName: 'golang/go', description: 'Go 编程语言', language: 'Go', stars: 0 },
+    { fullName: 'rust-lang/rust', description: 'Rust 编程语言', language: 'Rust', stars: 0 },
+    { fullName: 'nodejs/node', description: 'Node.js JavaScript 运行时', language: 'JavaScript', stars: 0 },
+    { fullName: 'vuejs/vue', description: '渐进式 JavaScript 框架', language: 'TypeScript', stars: 0 },
+    { fullName: 'django/django', description: 'Python Web 框架', language: 'Python', stars: 0 },
+    { fullName: 'kubernetes/kubernetes', description: '容器编排系统', language: 'Go', stars: 0 }
+  ];
+
+  function loadRecommendations() {
+    fetch('/api/top-stars').then(r => r.json()).then(items => {
+      renderRecList('#top-stars', items);
+    }).catch(() => {
+      document.querySelector('#top-stars').innerHTML = '<span class="rec-loading">加载失败</span>';
+    });
+    fetch('/api/trending').then(r => r.json()).then(items => {
+      renderRecList('#trending', items);
+    }).catch(() => {
+      document.querySelector('#trending').innerHTML = '<span class="rec-loading">加载失败</span>';
+    });
+    renderRecList('#classics', CLASSICS, true);
+  }
+
+  function renderRecList(sel, items, hideStars) {
+    if (!Array.isArray(items) || !items.length) {
+      document.querySelector(sel).innerHTML = '<span class="rec-loading">暂无数据</span>';
+      return;
+    }
+    document.querySelector(sel).innerHTML = items.map((r, i) => {
+      const stars = r.stars >= 1000 ? (r.stars / 1000).toFixed(1) + 'k' : (r.stars > 0 ? r.stars : '');
+      const starsText = (!hideStars && stars) ? ' · ' + stars + ' stars' : '';
+      const rankBadge = `<span class="rec-rank">${i + 1}</span>`;
+      return `<div class="rec-item" data-repo="${escape(r.fullName)}">
+        ${rankBadge}
+        <div class="rec-info">
+          <span class="rec-name">${escape(r.fullName)}</span>
+          <span class="rec-meta">${escape(r.language || '')}${starsText}</span>
+          <span class="rec-desc">${escape((r.description || '').slice(0, 80))}</span>
+        </div>
+        <div class="rec-actions">
+          <button class="rec-analyze" data-repo="${escape(r.fullName)}">分析</button>
+          <a class="rec-goto" href="https://github.com/${escape(r.fullName)}" target="_blank" rel="noopener">跳转</a>
+        </div>
+      </div>`;
+    }).join('');
+
+    // 分析按钮
+    document.querySelectorAll(sel + ' .rec-analyze').forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        repoInput.value = this.dataset.repo;
+        analyze();
+      });
+    });
+  }
+
+  // 分析完成后隐藏推荐、显示"返回"按钮
+  function showResultHideRec() {
+    recSection.classList.add('hidden');
+    backToRecBtn.classList.remove('hidden');
+  }
+
+  // Tab 切换
+  document.querySelectorAll('.rec-tab').forEach(tab => {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('.rec-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.rec-panel').forEach(p => p.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById('panel-' + this.dataset.tab).classList.add('active');
+    });
+  });
+
+  loadRecommendations();
 
   // ========= 工具 =========
   function escape(s) {

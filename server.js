@@ -585,6 +585,104 @@ function buildQuickJumps(owner, repo, branch, createdAt, pushedAt) {
   return jumps;
 }
 
+// ========= 推荐仓库 API =========
+
+// 简单内存缓存
+const cache = { topStars: null, topStarsAt: 0, trending: null, trendingAt: 0 };
+const CACHE_TTL = 6 * 3600 * 1000; // 6 小时
+
+/**
+ * 发起一次 HTTPS GET 请求（通用，用于非 GitHub API 的 URL）
+ */
+function httpsGet(fullUrl) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(fullUrl);
+    const req = https.request({
+      host: u.host,
+      path: u.pathname + u.search,
+      method: 'GET',
+      headers: { 'User-Agent': USER_AGENT }
+    }, res => {
+      let chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    req.on('error', reject);
+    req.setTimeout(15000, () => req.destroy(new Error('请求超时')));
+    req.end();
+  });
+}
+
+/**
+ * API: /api/top-stars — 从 Github-Ranking 解析历史 Stars 前 10
+ * 数据源: https://github.com/EvanLi/Github-Ranking
+ */
+async function handleTopStars(req, res) {
+  if (cache.topStars && Date.now() - cache.topStarsAt < CACHE_TTL) {
+    return sendJson(res, 200, cache.topStars);
+  }
+  try {
+    const md = await httpsGet('https://raw.githubusercontent.com/EvanLi/Github-Ranking/master/Top100/Top-100-stars.md');
+    const lines = md.split('\n').filter(l => l.startsWith('|') && /^\|\s*\d+/.test(l));
+    const items = [];
+    for (const line of lines.slice(0, 10)) {
+      // | 1 | [name](url) | stars | forks | lang | issues | desc | date |
+      const cells = line.split('|').map(c => c.trim()).filter(Boolean);
+      if (cells.length < 7) continue;
+      const nameMatch = cells[1].match(/\[([^\]]+)\]\(([^)]+)\)/);
+      if (!nameMatch) continue;
+      const repoUrl = nameMatch[2];
+      const fullName = repoUrl.replace('https://github.com/', '');
+      const desc = (cells[6] || '').replace(/^"|"$/g, '');
+      items.push({
+        fullName,
+        description: desc,
+        stars: parseInt(cells[2]) || 0,
+        language: cells[4] === 'None' ? null : cells[4],
+        url: repoUrl
+      });
+    }
+    cache.topStars = items;
+    cache.topStarsAt = Date.now();
+    return sendJson(res, 200, items);
+  } catch (err) {
+    return sendJson(res, 500, { error: err.message });
+  }
+}
+
+/**
+ * API: /api/trending — 近期热门仓库（最近 7 天内创建、按 stars 排序）
+ */
+async function handleTrending(req, res) {
+  if (cache.trending && Date.now() - cache.trendingAt < CACHE_TTL) {
+    return sendJson(res, 200, cache.trending);
+  }
+  try {
+    const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const resp = await githubRequest('/search/repositories', {
+      q: `created:>${since}`,
+      sort: 'stars',
+      order: 'desc',
+      per_page: 10
+    });
+    if (resp.status !== 200) {
+      return sendJson(res, 502, { error: 'GitHub API 请求失败' });
+    }
+    const items = (resp.body.items || []).map(r => ({
+      fullName: r.full_name,
+      description: r.description,
+      stars: r.stargazers_count,
+      language: r.language,
+      url: r.html_url
+    }));
+    cache.trending = items;
+    cache.trendingAt = Date.now();
+    return sendJson(res, 200, items);
+  } catch (err) {
+    return sendJson(res, 500, { error: err.message });
+  }
+}
+
 // ========= HTTP 工具 =========
 
 function sendJson(res, status, obj) {
@@ -630,6 +728,12 @@ const server = http.createServer((req, res) => {
   // API 路由
   if (pathname === '/api/history' && req.method === 'GET') {
     return handleHistoryApi(req, res, parsedUrl);
+  }
+  if (pathname === '/api/top-stars' && req.method === 'GET') {
+    return handleTopStars(req, res);
+  }
+  if (pathname === '/api/trending' && req.method === 'GET') {
+    return handleTrending(req, res);
   }
   if (pathname === '/api/health') {
     return sendJson(res, 200, {

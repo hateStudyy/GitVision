@@ -29,6 +29,29 @@
       <div id="status" class="status"></div>
     </section>
 
+    <!-- 推荐仓库 -->
+    <section id="recommendations" class="recommendations">
+      <div class="rec-tabs">
+        <button class="rec-tab active" data-tab="top-stars">Stars 排行榜</button>
+        <button class="rec-tab" data-tab="trending">近期 Trending</button>
+        <button class="rec-tab" data-tab="classics">知名开源项目</button>
+      </div>
+      <div class="rec-panels">
+        <div class="rec-panel active" id="panel-top-stars">
+          <p class="rec-source">数据来源：<a href="https://github.com/EvanLi/Github-Ranking" target="_blank" rel="noopener">Github-Ranking</a> · 每日更新</p>
+          <div id="top-stars" class="rec-list"><span class="rec-loading">加载中…</span></div>
+        </div>
+        <div class="rec-panel" id="panel-trending">
+          <p class="rec-source">最近 7 天新项目按 Stars 排序</p>
+          <div id="trending" class="rec-list"><span class="rec-loading">加载中…</span></div>
+        </div>
+        <div class="rec-panel" id="panel-classics">
+          <p class="rec-source">经典项目，了解开源历史</p>
+          <div id="classics" class="rec-list"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- 结果区 -->
     <section id="result" class="result hidden">
 
@@ -97,7 +120,7 @@
 
   <footer class="site-footer">
     <div class="container">
-      <span>纯原生 Node.js + 官方 GitHub REST API · 不克隆仓库、不下载代码</span>
+      <a href="https://github.com/hateStudyy/GitVision" target="_blank" rel="noopener">GitHub · hateStudyy/GitVision</a>
     </div>
   </footer>
 
