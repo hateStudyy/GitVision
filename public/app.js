@@ -19,6 +19,16 @@
   });
   analyzeBtn.addEventListener('click', analyze);
 
+  /** 轻量 toast 提示 */
+  function showToast(msg) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('toast-show'));
+    setTimeout(() => { el.classList.remove('toast-show'); setTimeout(() => el.remove(), 300); }, 3000);
+  }
+
   /** 设置状态提示 */
   function setStatus(msg, type) {
     statusEl.textContent = msg || '';
@@ -194,15 +204,19 @@
 
     // 统计摘要
     const isExact = d.timelineSource === 'stats_api';
-    const sourceLabel = isExact
-      ? '精确统计（GitHub Statistics API）'
-      : '采样估算 · <a href="javascript:void(0)" id="tl-refresh" style="color:var(--accent);text-decoration:underline">刷新获取精确数据</a>';
+    const exactTip = '数据来自 GitHub Statistics API，包含每位贡献者的逐周提交记录，精确到每一次 commit';
+    const sampleTip = '通过分页采样估算，可能与实际提交数存在偏差｜GitHub 精确统计需要后台计算，首次请求会触发计算，耗时从几秒到数分钟不等，取决于仓库大小和贡献者数量｜点击"刷新"将在后台持续等待（最长 3 分钟），期间可继续浏览，计算完成后时间线会自动更新';
+    const sourceBadge = isExact
+      ? `<span class="tl-badge tl-badge-ok">精确统计</span><span class="tl-tip" data-tip="${exactTip}">?</span>`
+      : `<span class="tl-badge tl-badge-warn">采样估算</span><span class="tl-tip" data-tip="${sampleTip}">?</span><button class="tl-refresh-btn" id="tl-refresh">尝试获取精确数据</button>`;
     const statsHtml = `<div class="tl-stats">
-      <span>跨度 <strong>${years.length}</strong> 年 · <strong>${t.length}</strong> 个月</span>
-      <span>有提交月份 <strong>${monthsWithData}</strong> 个</span>
-      <span>总提交数 <strong>${totalCommits}</strong>${isExact ? '' : '（估算）'}</span>
-      ${peakMonth ? '<span>峰值 <strong>' + peakMonth.count + '</strong> 次/月 (' + peakMonth.month + ')</span>' : ''}
-      <span>数据来源：${sourceLabel}</span>
+      <div class="tl-stats-row">
+        <span>跨度 <strong>${years.length}</strong> 年 · <strong>${t.length}</strong> 个月</span>
+        <span>有提交月份 <strong>${monthsWithData}</strong> 个</span>
+        <span>总提交数 <strong>${totalCommits}</strong>${isExact ? '' : '（估算）'}</span>
+        ${peakMonth ? '<span>峰值 <strong>' + peakMonth.count + '</strong> 次/月 (' + peakMonth.month + ')</span>' : ''}
+      </div>
+      <div class="tl-source">数据来源：${sourceBadge}</div>
     </div>`;
 
     // 年度柱状图
@@ -277,11 +291,53 @@
     }
     $('#tl-month-close').addEventListener('click', closePanel);
 
-    // 采样模式下，点击"刷新"重新请求（此时 GitHub 缓存可能已就绪）
+    // 采样模式下，点击"刷新"轮询 Stats API 直到拿到精确数据
     const refreshBtn = document.getElementById('tl-refresh');
     if (refreshBtn) {
-      refreshBtn.addEventListener('click', function () {
-        analyze();
+      refreshBtn.addEventListener('click', async function () {
+        refreshBtn.disabled = true;
+        const maxWait = 180000; // 最多后台等 3 分钟
+        const interval = 5000;  // 每 5 秒重试
+        const start = Date.now();
+        let ticker;
+
+        // 前 10 秒显示计时，之后变成后台等待提示
+        ticker = setInterval(() => {
+          const s = Math.round((Date.now() - start) / 1000);
+          if (s <= 10) {
+            refreshBtn.textContent = '等待 GitHub 计算中…' + s + 's';
+          } else {
+            refreshBtn.textContent = '后台等待中…' + s + 's（可继续浏览）';
+          }
+        }, 500);
+
+        async function poll() {
+          try {
+            const resp = await fetch(`/api/refresh-stats?url=${encodeURIComponent(d.owner + '/' + d.repo)}`);
+            const result = await resp.json();
+            if (result.status === 'ok' && result.timeline) {
+              clearInterval(ticker);
+              d.timeline = result.timeline;
+              d.timelineSource = result.timelineSource;
+              renderTimeline(d);
+              // 成功 toast
+              showToast('已获取精确统计数据，时间线已更新');
+              return;
+            }
+            if (result.status === 'computing' && Date.now() - start < maxWait) {
+              setTimeout(poll, interval);
+              return;
+            }
+            clearInterval(ticker);
+            refreshBtn.textContent = '暂未就绪，可稍后再试';
+            refreshBtn.disabled = false;
+          } catch (e) {
+            clearInterval(ticker);
+            refreshBtn.textContent = '请求失败';
+            refreshBtn.disabled = false;
+          }
+        }
+        poll();
       });
     }
   }

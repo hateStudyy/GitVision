@@ -401,6 +401,38 @@ function dateRangeCommitsUrl(owner, repo, branch, sinceISO, untilISO) {
   return `https://github.com/${owner}/${repo}/commits/${b}?${params.join('&')}`;
 }
 
+/**
+ * 将 Stats API 的贡献者周数据转换为月度时间线
+ * @param {Array} weeklyData - Stats API 返回的 contributors 数组
+ * @returns {Array|null} 月度时间线数组，或 null（无数据时）
+ */
+function buildTimelineFromStats(weeklyData) {
+  if (!weeklyData || !Array.isArray(weeklyData)) return null;
+  const monthlyExact = new Map();
+  for (const contributor of weeklyData) {
+    if (!contributor.weeks) continue;
+    for (const w of contributor.weeks) {
+      if (w.c === 0) continue;
+      const d = new Date(w.w * 1000);
+      const ym = d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
+      monthlyExact.set(ym, (monthlyExact.get(ym) || 0) + w.c);
+    }
+  }
+  const sortedKeys = Array.from(monthlyExact.keys()).sort();
+  if (sortedKeys.length < 2) return null;
+  const [sY, sM] = sortedKeys[0].split('-').map(Number);
+  const [eY, eM] = sortedKeys[sortedKeys.length - 1].split('-').map(Number);
+  const timeline = [];
+  let y = sY, m = sM;
+  while (y < eY || (y === eY && m <= eM)) {
+    const key = `${y}-${String(m).padStart(2, '0')}`;
+    timeline.push({ month: key, count: monthlyExact.get(key) || 0 });
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+  return timeline;
+}
+
 // ========= 分析结果缓存 =========
 const historyCache = new Map();
 const HISTORY_CACHE_TTL = 10 * 60 * 1000; // 10 分钟
@@ -443,30 +475,13 @@ async function handleHistoryApi(req, res, parsedUrl) {
 
     const summary = summarizeCommits(sampleCommits);
 
-    // 用 GitHub Statistics API 的精确周数据构建完整月度时间线
-    // 如果 weeklyMap 有数据则替换采样时间线
+    // 用 GitHub Statistics API 的精确周数据替换采样时间线
     if (weeklyMap && weeklyMap.size > 0) {
-      const monthlyExact = new Map();
-      for (const [ts, count] of weeklyMap) {
-        if (count === 0) continue;
-        const d = new Date(ts * 1000);
-        const ym = d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
-        monthlyExact.set(ym, (monthlyExact.get(ym) || 0) + count);
-      }
-      // 补全空缺月份
-      const sortedKeys = Array.from(monthlyExact.keys()).sort();
-      if (sortedKeys.length >= 2) {
-        const [sY, sM] = sortedKeys[0].split('-').map(Number);
-        const [eY, eM] = sortedKeys[sortedKeys.length - 1].split('-').map(Number);
-        const fullTimeline = [];
-        let y = sY, m = sM;
-        while (y < eY || (y === eY && m <= eM)) {
-          const key = `${y}-${String(m).padStart(2, '0')}`;
-          fullTimeline.push({ month: key, count: monthlyExact.get(key) || 0 });
-          m++;
-          if (m > 12) { m = 1; y++; }
-        }
-        summary.timeline = fullTimeline;
+      // 构造一个兼容 buildTimelineFromStats 输入的临时结构
+      const fakeContributors = [{ weeks: Array.from(weeklyMap.entries()).map(([w, c]) => ({ w, c })) }];
+      const exactTimeline = buildTimelineFromStats(fakeContributors);
+      if (exactTimeline) {
+        summary.timeline = exactTimeline;
         summary.timelineSource = 'stats_api';
       }
     }
@@ -701,6 +716,49 @@ async function handleTrending(req, res) {
   }
 }
 
+/**
+ * API: /api/refresh-stats?url=owner/repo
+ * 仅请求 Stats API 刷新时间线，消耗 1 次 API 调用
+ */
+async function handleRefreshStats(req, res, parsedUrl) {
+  const input = parsedUrl.query.url || parsedUrl.query.repo;
+  if (!input) return sendJson(res, 400, { error: '缺少 url 参数' });
+  const parsed = parseRepoUrl(input);
+  if (!parsed) return sendJson(res, 400, { error: '无法解析仓库地址' });
+
+  try {
+    const statsResp = await githubRequest(`/repos/${parsed.owner}/${parsed.repo}/stats/contributors`);
+
+    if (statsResp.status === 202) {
+      return sendJson(res, 200, { status: 'computing' });
+    }
+
+    if (statsResp.status === 200 && Array.isArray(statsResp.body)) {
+      const timeline = buildTimelineFromStats(statsResp.body);
+      if (timeline) {
+        // 更新 historyCache 中的时间线
+        const cacheKey = `${parsed.owner}/${parsed.repo}`.toLowerCase();
+        const cached = historyCache.get(cacheKey);
+        if (cached) {
+          cached.data.timeline = timeline;
+          cached.data.timelineSource = 'stats_api';
+          cached.at = Date.now(); // 刷新缓存时间
+        }
+        return sendJson(res, 200, {
+          status: 'ok',
+          timeline,
+          timelineSource: 'stats_api',
+          rateLimit: lastRateLimit
+        });
+      }
+    }
+
+    return sendJson(res, 200, { status: 'unavailable' });
+  } catch (err) {
+    return sendJson(res, 500, { error: err.message });
+  }
+}
+
 // ========= HTTP 工具 =========
 
 function sendJson(res, status, obj) {
@@ -752,6 +810,9 @@ const server = http.createServer((req, res) => {
   }
   if (pathname === '/api/trending' && req.method === 'GET') {
     return handleTrending(req, res);
+  }
+  if (pathname === '/api/refresh-stats' && req.method === 'GET') {
+    return handleRefreshStats(req, res, parsedUrl);
   }
   if (pathname === '/api/health') {
     return sendJson(res, 200, {
