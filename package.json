@@ -1,7 +1,7 @@
 {
   "name": "gitvision",
   "version": "1.0.0",
-  "description": "GitVision - GitHub 仓库历史全景总结工具，纯原生 Node.js 实现",
+  "description": "GitVision - The full story of any GitHub repo in one page. Zero dependencies.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
