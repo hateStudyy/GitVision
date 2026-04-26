@@ -44,7 +44,11 @@
         return;
       }
       render(data);
-      setStatus(`分析完成 · ${data.owner}/${data.repo}`, 'ok');
+      const rl = data.rateLimit;
+      const quotaText = (rl && rl.remaining != null)
+        ? ` · API 配额：${rl.remaining}/${rl.limit}`
+        : '';
+      setStatus(`分析完成 · ${data.owner}/${data.repo}${quotaText}`, 'ok');
       showResultHideRec();
       resultEl.classList.remove('hidden');
       resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });

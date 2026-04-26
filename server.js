@@ -73,6 +73,14 @@ function githubRequest(pathname, query = {}) {
           const body = Buffer.concat(chunks).toString('utf8');
           let parsed = null;
           try { parsed = JSON.parse(body); } catch (_) { parsed = body; }
+          // 追踪 API 配额
+          if (res.headers['x-ratelimit-remaining'] != null) {
+            lastRateLimit = {
+              remaining: parseInt(res.headers['x-ratelimit-remaining'], 10),
+              limit: parseInt(res.headers['x-ratelimit-limit'], 10),
+              reset: parseInt(res.headers['x-ratelimit-reset'], 10)
+            };
+          }
           resolve({
             status: res.statusCode,
             headers: res.headers,
@@ -246,20 +254,13 @@ async function aggregateRepoHistory(owner, repo) {
     }
   }
 
-  // 6. 获取完整时间线：使用 GitHub Statistics API（不阻塞）
-  //    仅发一次请求：200 直接用；202 说明 GitHub 在后台计算，不等待，
-  //    先返回采样数据，前端可点"刷新"再次请求（此时缓存通常已就绪）
+  // 6. 获取完整时间线：使用 GitHub Statistics API（完全不阻塞）
+  //    仅发一次请求：200 直接用；202 说明 GitHub 在后台计算，
+  //    不等待，直接用采样数据，用户可点"刷新"再次请求
   let weeklyData = null;
-  // 首次请求；若 202 则等 4 秒重试 1 次（兼顾速度与命中率）
-  let statsResp = await githubRequest(`/repos/${owner}/${repo}/stats/contributors`);
+  const statsResp = await githubRequest(`/repos/${owner}/${repo}/stats/contributors`);
   if (statsResp.status === 200 && Array.isArray(statsResp.body)) {
     weeklyData = statsResp.body;
-  } else if (statsResp.status === 202) {
-    await new Promise(r => setTimeout(r, 4000));
-    statsResp = await githubRequest(`/repos/${owner}/${repo}/stats/contributors`);
-    if (statsResp.status === 200 && Array.isArray(statsResp.body)) {
-      weeklyData = statsResp.body;
-    }
   }
 
   // 将所有贡献者的周数据叠加为 { weekTimestamp -> totalCommits }
@@ -400,6 +401,13 @@ function dateRangeCommitsUrl(owner, repo, branch, sinceISO, untilISO) {
   return `https://github.com/${owner}/${repo}/commits/${b}?${params.join('&')}`;
 }
 
+// ========= 分析结果缓存 =========
+const historyCache = new Map();
+const HISTORY_CACHE_TTL = 10 * 60 * 1000; // 10 分钟
+
+// ========= API 配额追踪 =========
+let lastRateLimit = { remaining: null, limit: null, reset: null };
+
 // ========= HTTP 路由 =========
 
 /**
@@ -413,6 +421,13 @@ async function handleHistoryApi(req, res, parsedUrl) {
   const parsed = parseRepoUrl(input);
   if (!parsed) {
     return sendJson(res, 400, { error: '无法解析仓库地址，请确认是合法的 GitHub 仓库 URL' });
+  }
+
+  // 缓存命中：10 分钟内同一仓库直接返回
+  const cacheKey = `${parsed.owner}/${parsed.repo}`.toLowerCase();
+  const cached = historyCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < HISTORY_CACHE_TTL) {
+    return sendJson(res, 200, cached.data);
   }
 
   try {
@@ -553,9 +568,12 @@ async function handleHistoryApi(req, res, parsedUrl) {
         chore: summary.buckets.chore.slice(0, 10).map(x => ({ ...x, url: commitUrl(parsed.owner, parsed.repo, x.sha) }))
       },
       links,
-      quickJumps: buildQuickJumps(parsed.owner, parsed.repo, defaultBranch, repoInfo.created_at, repoInfo.pushed_at)
+      quickJumps: buildQuickJumps(parsed.owner, parsed.repo, defaultBranch, repoInfo.created_at, repoInfo.pushed_at),
+      rateLimit: lastRateLimit
     };
 
+    // 写入缓存
+    historyCache.set(cacheKey, { data: payload, at: Date.now() });
     return sendJson(res, 200, payload);
   } catch (err) {
     const status = err.statusCode || 500;
@@ -739,7 +757,9 @@ const server = http.createServer((req, res) => {
     return sendJson(res, 200, {
       ok: true,
       token: GITHUB_TOKEN ? 'configured' : 'none',
-      time: new Date().toISOString()
+      time: new Date().toISOString(),
+      rateLimit: lastRateLimit,
+      historyCacheSize: historyCache.size
     });
   }
 
