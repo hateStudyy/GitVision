@@ -29,7 +29,7 @@
     // 重新渲染推荐列表
     if (recCache.top) renderRecList('#top-stars', recCache.top);
     if (recCache.trending) renderRecList('#trending', recCache.trending);
-    renderRecList('#classics', CLASSICS, true);
+    renderRecList('#classics', getClassics(), true);
     backToRecBtn.textContent = t('rec.back');
   });
 
@@ -453,19 +453,16 @@
     { fullName: 'django/django',           desc: { zh: 'Python Web 框架', en: 'The Python Web framework' }, language: 'Python' },
     { fullName: 'kubernetes/kubernetes',   desc: { zh: '容器编排系统', en: 'Container orchestration system' }, language: 'Go' }
   ];
-  // 提供给 renderRecList 的"动态"经典列表
-  const CLASSICS = new Proxy([], {
-    get(_, prop) {
-      const lang = window.I18N.getLang();
-      const arr = CLASSICS_DATA.map(x => ({
-        fullName: x.fullName,
-        description: x.desc[lang] || x.desc.en,
-        language: x.language,
-        stars: 0
-      }));
-      return arr[prop];
-    }
-  });
+  // 按当前语言生成经典列表
+  function getClassics() {
+    const lang = window.I18N.getLang();
+    return CLASSICS_DATA.map(x => ({
+      fullName: x.fullName,
+      description: x.desc[lang] || x.desc.en,
+      language: x.language,
+      stars: 0
+    }));
+  }
 
   function loadRecommendations() {
     fetch('/api/top-stars').then(r => r.json()).then(items => {
@@ -480,7 +477,7 @@
     }).catch(() => {
       document.querySelector('#trending').innerHTML = `<span class="rec-loading">${t('rec.loadFailed')}</span>`;
     });
-    renderRecList('#classics', CLASSICS, true);
+    renderRecList('#classics', getClassics(), true);
   }
 
   function renderRecList(sel, items, hideStars) {
