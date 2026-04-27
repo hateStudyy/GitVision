@@ -496,7 +496,6 @@ async function handleHistoryApi(req, res, parsedUrl) {
     if (firstCommit) {
       milestones.push({
         type: 'first-commit',
-        title: '首次提交（项目起点）',
         sha: firstCommit.sha,
         date: firstCommit.commit.author.date,
         message: firstCommit.commit.message.split('\n')[0],
@@ -506,9 +505,8 @@ async function handleHistoryApi(req, res, parsedUrl) {
     for (const t of tags.slice(0, 50)) {
       milestones.push({
         type: 'tag',
-        title: `版本标签 ${t.name}`,
-        sha: t.commit.sha,
         tag: t.name,
+        sha: t.commit.sha,
         url: `https://github.com/${parsed.owner}/${parsed.repo}/releases/tag/${encodeURIComponent(t.name)}`,
         commitUrl: commitUrl(parsed.owner, parsed.repo, t.commit.sha)
       });
@@ -607,7 +605,7 @@ function buildQuickJumps(owner, repo, branch, createdAt, pushedAt) {
   const jumps = [];
   for (let y = startYear; y <= endYear; y++) {
     jumps.push({
-      label: `${y} 年提交`,
+      year: y,
       url: dateRangeCommitsUrl(
         owner, repo, branch,
         `${y}-01-01T00:00:00Z`,
