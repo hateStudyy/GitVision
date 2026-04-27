@@ -64,7 +64,15 @@
       const resp = await fetch(`/api/history?url=${encodeURIComponent(repoUrl)}`);
       const data = await resp.json();
       if (!resp.ok) {
-        setStatus(t('status.error') + (data.error || t('status.requestFail')), 'error');
+        // 限流等带双语 message 的错误
+        const lang = window.I18N.getLang();
+        let msg;
+        if (data.message && typeof data.message === 'object') {
+          msg = data.message[lang] || data.message.en || data.error;
+        } else {
+          msg = data.error || t('status.requestFail');
+        }
+        setStatus(t('status.error') + msg, 'error');
         return;
       }
       lastData = data;

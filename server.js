@@ -793,13 +793,70 @@ function serveStatic(req, res) {
   });
 }
 
+// ========= 限流（每 IP 每分钟 30 次 API 请求） =========
+
+const RATE_LIMIT_MAX = 30;        // 每窗口最大请求数
+const RATE_LIMIT_WINDOW = 60000;  // 窗口大小：60 秒
+const ipHits = new Map();         // ip -> [timestamp, ...]
+
+function getClientIp(req) {
+  // Vercel / 代理场景下，真实 IP 在 x-forwarded-for 第一个
+  const fwd = req.headers['x-forwarded-for'];
+  if (fwd) return String(fwd).split(',')[0].trim();
+  return req.socket && req.socket.remoteAddress || 'unknown';
+}
+
+function checkRateLimit(req) {
+  const ip = getClientIp(req);
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW;
+  const arr = (ipHits.get(ip) || []).filter(ts => ts > windowStart);
+  if (arr.length >= RATE_LIMIT_MAX) {
+    const retryAfter = Math.ceil((arr[0] + RATE_LIMIT_WINDOW - now) / 1000);
+    return { ok: false, retryAfter };
+  }
+  arr.push(now);
+  ipHits.set(ip, arr);
+  // 顺手清理：超过 1000 个 IP 时清掉过期记录
+  if (ipHits.size > 1000) {
+    for (const [k, v] of ipHits.entries()) {
+      const fresh = v.filter(ts => ts > windowStart);
+      if (fresh.length === 0) ipHits.delete(k);
+      else ipHits.set(k, fresh);
+    }
+  }
+  return { ok: true };
+}
+
+function send429(res, retryAfter) {
+  res.writeHead(429, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Retry-After': String(retryAfter),
+    'X-RateLimit-Limit': String(RATE_LIMIT_MAX),
+    'X-RateLimit-Window': String(RATE_LIMIT_WINDOW / 1000)
+  });
+  res.end(JSON.stringify({
+    error: 'rate_limited',
+    retryAfter,
+    message: {
+      zh: `请求过于频繁，请 ${retryAfter} 秒后再试（每 IP 每分钟最多 ${RATE_LIMIT_MAX} 次）`,
+      en: `Too many requests. Please retry in ${retryAfter}s (limit: ${RATE_LIMIT_MAX} per IP per minute)`
+    }
+  }));
+}
+
 // ========= 启动服务器 =========
 
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
-  // API 路由
+  // API 路由 — 全部走限流（health 也限，防止有人当探针刷）
+  if (pathname.startsWith('/api/')) {
+    const rl = checkRateLimit(req);
+    if (!rl.ok) return send429(res, rl.retryAfter);
+  }
+
   if (pathname === '/api/history' && req.method === 'GET') {
     return handleHistoryApi(req, res, parsedUrl);
   }
