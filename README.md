@@ -6,7 +6,7 @@
 
 Paste a repo URL. Get the complete history: first commit, interactive timeline, commit classification, milestones, and quick links — all in seconds.
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-gitvision.vercel.app-blue?style=for-the-badge)](https://gitvision-9fjzpv1d0-yingges-projects.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-gitvision--wine.vercel.app-blue?style=for-the-badge)](https://gitvision-wine.vercel.app)
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A518-green?style=flat-square)](https://nodejs.org)
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen?style=flat-square)](#)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](LICENSE)

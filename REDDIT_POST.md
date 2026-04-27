@@ -26,7 +26,7 @@ GitHub gives you a great repo page. But the moment you want to actually understa
 
 I kept hitting the same walls every time I evaluated a new OSS dependency, so I built **GitVision** — a single-page panoramic view of any GitHub repo.
 
-**Live demo:** https://gitvision-9fjzpv1d0-yingges-projects.vercel.app
+**Live demo:** https://gitvision-wine.vercel.app
 **Repo:** https://github.com/hateStudyy/GitVision
 
 What you get from one URL paste:
