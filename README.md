@@ -114,6 +114,16 @@ GitVision/
     └── app.js         # Frontend logic (vanilla JS)
 ```
 
+## Star History
+
+<a href="https://www.star-history.com/#hateStudyy/GitVision&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=hateStudyy/GitVision&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=hateStudyy/GitVision&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=hateStudyy/GitVision&type=Date" />
+ </picture>
+</a>
+
 ## Contributing
 
 Issues and PRs welcome. Since the project has zero dependencies, contributions are easy to review and test — just `node server.js` and you're running.

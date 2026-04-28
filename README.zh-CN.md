@@ -181,6 +181,18 @@ A: 题目要求轻量、无第三方依赖。基于 commit message 前缀 + 中�
 
 ---
 
+## Star 增长曲线
+
+<a href="https://www.star-history.com/#hateStudyy/GitVision&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=hateStudyy/GitVision&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=hateStudyy/GitVision&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=hateStudyy/GitVision&type=Date" />
+ </picture>
+</a>
+
+---
+
 ## License
 
 MIT
