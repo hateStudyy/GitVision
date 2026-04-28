@@ -98,10 +98,24 @@
     renderOverview(d);
     renderQuickLinks(d);
     renderFirstCommit(d);
+    renderStarHistory(d);
     renderTimeline(d);
     renderMilestones(d);
     renderCategorized(d);
     renderCommitLists(d);
+  }
+
+  /** ⑤ Star 增长曲线 — 嵌入 star-history.com */
+  function renderStarHistory(d) {
+    const repo = d.owner + '/' + d.repo;
+    // 网站本身就是深色主题，固定用 dark 主题的图
+    const src = `https://api.star-history.com/svg?repos=${encodeURIComponent(repo)}&type=Date&theme=dark`;
+    const link = `https://www.star-history.com/#${encodeURIComponent(repo)}&Date`;
+    $('#star-history').innerHTML = `
+      <a href="${escape(link)}" target="_blank" rel="noopener" class="star-history-link">
+        <img src="${escape(src)}" alt="Star History" loading="lazy" />
+      </a>
+    `;
   }
 
   /** ① 基础信息 */

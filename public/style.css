@@ -849,6 +849,34 @@ body {
   .tl-year-label { font-size: 10px; }
 }
 
+/* ===== Star 增长曲线 ===== */
+.star-history {
+  margin-top: 12px;
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.star-history-link {
+  display: block;
+  width: 100%;
+  text-decoration: none;
+  transition: transform .2s;
+}
+.star-history-link:hover { transform: translateY(-2px); }
+.star-history img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 4px;
+}
+
 /* ===== 语言切换 ===== */
 .header-inner {
   display: flex;
