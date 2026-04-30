@@ -7,20 +7,20 @@
 
   const DICT = {
     zh: {
-      'site.title': 'GitVision · GitHub 仓库历史全景总结',
-      'site.subtitle': '粘贴任意 GitHub 仓库地址，一键直达首次提交 / 早期历史 / 版本里程碑',
+      'site.title': 'Git<em>Vision</em>',
+      'site.subtitle': '每个仓库都有一个故事 —— 从第一次提交开始',
 
-      'input.placeholder': '例如：https://github.com/torvalds/linux 或 facebook/react',
-      'input.analyze': '分析仓库',
+      'input.placeholder': '粘贴 GitHub 仓库地址，或输入 owner/repo',
+      'input.analyze': '开始阅读',
       'input.empty': '请输入 GitHub 仓库地址',
 
-      'rec.tab.top': 'Stars 排行榜',
-      'rec.tab.trending': '近期 Trending',
-      'rec.tab.classics': '知名开源项目',
+      'rec.tab.top': 'Stars 榜',
+      'rec.tab.trending': '本周新作',
+      'rec.tab.classics': '编辑精选',
       'rec.source.label': '数据来源：',
       'rec.source.daily': '每日更新',
-      'rec.source.trending': '最近 7 天新项目按 Stars 排序',
-      'rec.source.classics': '经典项目，了解开源历史',
+      'rec.source.trending': '最近七日内崭露头角的新项目',
+      'rec.source.classics': '塑造现代软件世界的十部经典',
       'rec.loadFailed': '加载失败',
       'rec.empty': '暂无数据',
       'rec.analyze': '分析',
@@ -32,20 +32,20 @@
       'common.dash': '—',
       'common.noData': '无数据',
 
-      'panel.basic': '① 仓库基础信息',
-      'panel.overview': '② 项目整体简介',
-      'panel.quickLinks': '③ 一键直达（GitHub 原生链接）',
-      'panel.quickLinks.desc': '解决 GitHub 原生无法快速跳到最早提交的痛点，所有链接永久有效',
-      'panel.yearJumps': '按年份快速筛选',
-      'panel.firstCommit': '④ 第一次提交（项目起点）',
-      'panel.starHistory': '⑤ Star 增长曲线',
-      'panel.starHistory.desc': '由 star-history.com 提供，点击图表可查看完整交互式视图',
-      'panel.timeline': '⑥ 完整历史时间线',
-      'panel.milestones': '⑦ 关键版本 & 里程碑',
-      'panel.categorized': '⑧ 提交分类摘要（新增 / 修复 / 重构 / 优化 / 其他）',
-      'panel.commits': '⑨ 最新 20 条 & 最早 20 条提交',
-      'panel.commits.latest': '最新提交',
-      'panel.commits.earliest': '最早提交',
+      'panel.basic': '仓库概况',
+      'panel.overview': '叙事简介',
+      'panel.quickLinks': '直达入口',
+      'panel.quickLinks.desc': '直奔最早的提交、Releases、贡献者图谱 —— 所有链接永久有效',
+      'panel.yearJumps': '按年份浏览',
+      'panel.firstCommit': '起点',
+      'panel.starHistory': 'Star 增长曲线',
+      'panel.starHistory.desc': '由 star-history.com 提供，点击查看完整交互视图',
+      'panel.timeline': '完整时间线',
+      'panel.milestones': '关键里程碑',
+      'panel.categorized': '提交分类',
+      'panel.commits': '最新与最早',
+      'panel.commits.latest': '最新二十条',
+      'panel.commits.earliest': '最早二十条',
 
       'basic.repo': '仓库',
       'basic.description': '描述',
@@ -152,29 +152,29 @@
       'cat.chore': '杂项 (Chore)',
       'cat.empty': '— 无 —',
 
-      'status.analyzing': '正在分析仓库，通过 GitHub API 拉取数据……',
+      'status.analyzing': '正在翻阅仓库的历史档案……',
       'status.error': '错误：',
       'status.requestFail': '请求失败',
       'status.networkErr': '网络异常：',
-      'status.done': '分析完成 · ',
-      'status.quota': ' · API 配额：'
+      'status.done': '阅读就绪 · ',
+      'status.quota': ' · API 余额：'
     },
 
     en: {
-      'site.title': 'GitVision · The full story of any GitHub repo',
-      'site.subtitle': 'Paste any GitHub repo URL — jump to the first commit, browse early history, and trace version milestones in one click',
+      'site.title': 'Git<em>Vision</em>',
+      'site.subtitle': 'Every repository has a story — let\'s start from the first commit',
 
-      'input.placeholder': 'e.g. https://github.com/torvalds/linux or facebook/react',
-      'input.analyze': 'Analyze',
+      'input.placeholder': 'Paste a GitHub URL, or type owner/repo',
+      'input.analyze': 'Begin Reading',
       'input.empty': 'Please enter a GitHub repository URL',
 
       'rec.tab.top': 'Top by Stars',
-      'rec.tab.trending': 'Recent Trending',
-      'rec.tab.classics': 'Famous Projects',
+      'rec.tab.trending': 'This Week',
+      'rec.tab.classics': 'Editor\'s Picks',
       'rec.source.label': 'Source: ',
       'rec.source.daily': 'updated daily',
-      'rec.source.trending': 'New projects from the past 7 days, sorted by stars',
-      'rec.source.classics': 'Classic projects to explore open-source history',
+      'rec.source.trending': 'New projects rising this past week',
+      'rec.source.classics': 'Ten classics that shaped modern software',
       'rec.loadFailed': 'Failed to load',
       'rec.empty': 'No data',
       'rec.analyze': 'Analyze',
@@ -186,20 +186,20 @@
       'common.dash': '—',
       'common.noData': 'No data',
 
-      'panel.basic': '① Repository Info',
-      'panel.overview': '② Project Overview',
-      'panel.quickLinks': '③ Quick Links (Native GitHub URLs)',
-      'panel.quickLinks.desc': 'Solves GitHub\'s missing direct link to the earliest commit — all URLs are permanent',
-      'panel.yearJumps': 'Filter by Year',
-      'panel.firstCommit': '④ First Commit (Project Origin)',
-      'panel.starHistory': '⑤ Star History',
-      'panel.starHistory.desc': 'Powered by star-history.com — click the chart for the full interactive view',
-      'panel.timeline': '⑥ Full History Timeline',
-      'panel.milestones': '⑦ Versions & Milestones',
-      'panel.categorized': '⑧ Commit Classification (Feat / Fix / Refactor / Perf / etc.)',
-      'panel.commits': '⑨ Latest 20 & Earliest 20 Commits',
-      'panel.commits.latest': 'Latest Commits',
-      'panel.commits.earliest': 'Earliest Commits',
+      'panel.basic': 'The Profile',
+      'panel.overview': 'A Brief Account',
+      'panel.quickLinks': 'Direct Passages',
+      'panel.quickLinks.desc': 'Skip straight to the earliest commit, releases, contributor map — links that never expire',
+      'panel.yearJumps': 'Browse by Year',
+      'panel.firstCommit': 'The Beginning',
+      'panel.starHistory': 'Star Trajectory',
+      'panel.starHistory.desc': 'Powered by star-history.com — click for the full interactive view',
+      'panel.timeline': 'The Full Chronicle',
+      'panel.milestones': 'Milestones',
+      'panel.categorized': 'Commits, Classified',
+      'panel.commits': 'Latest & Earliest',
+      'panel.commits.latest': 'Twenty Most Recent',
+      'panel.commits.earliest': 'Twenty Earliest',
 
       'basic.repo': 'Repo',
       'basic.description': 'Description',
@@ -306,12 +306,12 @@
       'cat.chore': 'Chores (Chore)',
       'cat.empty': '— none —',
 
-      'status.analyzing': 'Analyzing repository via GitHub API…',
+      'status.analyzing': 'Leafing through the repository\'s archive…',
       'status.error': 'Error: ',
       'status.requestFail': 'Request failed',
       'status.networkErr': 'Network error: ',
-      'status.done': 'Done · ',
-      'status.quota': ' · API quota: '
+      'status.done': 'Ready to read · ',
+      'status.quota': ' · API budget: '
     }
   };
 
@@ -336,6 +336,11 @@
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
       el.textContent = t(key);
+    });
+    // 富文本版（允许 HTML，目前只用于带 <em> 的标题）
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      const key = el.getAttribute('data-i18n-html');
+      el.innerHTML = t(key);
     });
     // 属性
     document.querySelectorAll('[data-i18n-attr]').forEach(el => {
