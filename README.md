@@ -17,6 +17,20 @@ Paste a repo URL. Get the complete history: first commit, interactive timeline, 
 
 ---
 
+<p align="center">
+  <img src="docs/screenshot-home.png" alt="GitVision homepage — editorial design inspired by Stripe Press" width="900" />
+  <br />
+  <sub><i>Homepage — Stripe Press-inspired editorial design</i></sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshot-analysis.png" alt="GitVision analysis page — chapter-style layout with serif headlines" width="900" />
+  <br />
+  <sub><i>Analysis page — every repo presented as a magazine feature</i></sub>
+</p>
+
+---
+
 ## Features
 
 - **First Commit Finder** — One click to the very first commit of any repo (something GitHub doesn't link to directly)

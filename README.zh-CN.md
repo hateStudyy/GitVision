@@ -11,6 +11,20 @@
 
 ---
 
+<p align="center">
+  <img src="docs/screenshot-home.png" alt="GitVision 首页 — Stripe Press 风格编辑出版物设计" width="900" />
+  <br />
+  <sub><i>首页 — Stripe Press 灵感的编辑出版物设计</i></sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshot-analysis.png" alt="GitVision 分析页 — 章节式排版与衬线标题" width="900" />
+  <br />
+  <sub><i>分析页 — 每个仓库都被呈现为一篇杂志特稿</i></sub>
+</p>
+
+---
+
 ## 技术特点
 
 - **后端**：纯原生 Node.js，仅使用内置模块（`http` / `https` / `fs` / `url` / `path`），**无任何第三方依赖**
